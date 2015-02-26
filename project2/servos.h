@@ -15,9 +15,10 @@
 // structure to hold all servo related info/states
 typedef struct{
   UINT8 looping;
-  UINT8 loopIndex;
+  UINT8 loops;  //number of loops to do
+  UINT8 curLoop; // current loop cycle
+  UINT8 loopStartIndex;
   UINT8 wait;
-  UINT8 loopCommands[10];
   UINT8 curPos;
   UINT8 pause;
   UINT8 recipeIndex;
@@ -67,13 +68,20 @@ UINT8 standardRecipe[20] = {
   RECIPE_END
 };
 
+UINT8 looping[5] = {
+  (START_LOOP | 2), 
+  MOV0, 
+  MOV5,
+  END_LOOP
+};
+
 UINT8 nestedLoop[6] = {
-	START_LOOP,
-	MOV0,
-	START_LOOP,
-	MOV1,
-	END_LOOP,
-	RECIPE_END
+  START_LOOP,
+  MOV1,
+  MOV4,
+  START_LOOP,
+  END_LOOP,
+  RECIPE_END
 };
 
 UINT8 testAllPos[8] = {

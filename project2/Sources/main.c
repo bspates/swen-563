@@ -185,21 +185,19 @@ UINT8 GetChar(void)
 UINT8 calcMove(UINT8 pos) {
   switch(pos) {
     case 1:
-      return 248;
+      return 250;
     case 2:
-      return 243;
+      return 245;
     case 3:
-      return 238;
+      return 240;
     case 4:
-      return 233;
+      return 235;
     case 5:
-      return 228;
+      return 230;
     case 6:
-      return 223;
+      return 225;
     default:
       (void)printf("Bad move position %u\r\n", pos);
-      // enter error state
-    
   }
   return 255;
 }
@@ -272,8 +270,8 @@ void nextOp() {
   for(i; i < 2; i++) {
     if(!servos[i].pause) {
       if(servos[i].wait <= 0) {
-        parseOpcode(servos[i].recipe[servos[i].recipeIndex], i);
-        servos[i].recipeIndex++;
+         parseOpcode(servos[i].recipe[servos[i].recipeIndex], i);
+         servos[i].recipeIndex++;
       }
     }
   }
@@ -308,12 +306,12 @@ void move(UINT8 pos, UINT8 servo) {
 // Initialize variables in servo struct
 Servo initServo(Servo s) {
   s.looping = 0;
-  s.loopIndex = 0;
   s.wait = 0;
   s.pause = 1;
   s.recipeIndex = 0;
   s.curPos = 0;
   s.err = 0;
+  s.loops = 0;  s.curLoop = 0;  s.loopStartIndex = 0;
   return s;
 }
 
@@ -399,10 +397,6 @@ void parseOpcode(UINT8 command, UINT8 servo){
         err(1, servo); 
         break;
       }
-      if(servos[servo].looping){
-        servos[servo].loopCommands[servos[servo].loopIndex] = command;
-        servos[servo].loopIndex++; 
-      }
       move(param+1, servo);
       wait(waitTime(param, servos[servo].curPos), servo);
       break;
@@ -411,10 +405,6 @@ void parseOpcode(UINT8 command, UINT8 servo){
       if(param < 0 || param > 31) {
         err(1, servo);
         break;
-      }
-      if(servos[servo].looping){
-        servos[servo].loopCommands[servos[servo].loopIndex] = command;
-        servos[servo].loopIndex++;
       }
       wait(param, servo);
       break;
@@ -429,6 +419,8 @@ void parseOpcode(UINT8 command, UINT8 servo){
         break;
       }
       servos[servo].looping = 1;
+      servos[servo].loops = param;
+      servos[servo].loopStartIndex = servos[servo].recipeIndex;
       break;
     
     case 5:  //END LOOP
@@ -436,13 +428,13 @@ void parseOpcode(UINT8 command, UINT8 servo){
         err(1, servo);
         break;
       }
-      servos[servo].looping = 0;
-      for(i; i < servos[servo].loopIndex; i++) {
-        parseOpcode(servos[servo].loopCommands[i], servo);
-        servos[servo].loopCommands[i] = 0;
-      }
       
-      servos[servo].loopIndex = 0;
+      if(servos[servo].curLoop >= servos[servo].loops) {
+        servos[servo].looping = 0;
+      } else {
+        servos[servo].curLoop++;
+        servos[servo].recipeIndex = servos[servo].loopStartIndex; 
+      }
       break;
     
     case 0: //END RECIPE
@@ -515,8 +507,8 @@ void main(void)
   setupPWM();
   setupLed();
   servos[0] = initServo(servos[0]);
-  servos[0].recipe = &nestedLoop;
+  servos[0].recipe = &standardRecipe;
   servos[1] = initServo(servos[1]);
-  servos[1].recipe = &testAllPos;
+  servos[1].recipe = &looping;
   cli();
 }
